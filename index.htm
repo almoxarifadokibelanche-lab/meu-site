@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meu Sistema de Cadastro</title>
+    <style>
+        /* DESIGN DO SITE */
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; margin: 0; display: flex; flex-direction: column; align-items: center; }
+        header { background-color: #007bff; color: white; width: 100%; text-align: center; padding: 20px 0; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        nav { margin: 20px 0; }
+        nav button { padding: 10px 20px; cursor: pointer; border: none; background: #007bff; color: white; border-radius: 5px; margin: 0 5px; font-weight: bold; transition: 0.3s; }
+        nav button:hover { background: #0056b3; }
+        
+        .container { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 90%; max-width: 500px; }
+        .aba { display: none; }
+        .ativa { display: block; animation: fadeIn 0.5s; }
+        
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
+        button#btnSalvar { width: 100%; padding: 12px; background-color: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; }
+        button#btnSalvar:hover { background-color: #218838; }
+
+        ul { list-style: none; padding: 0; }
+        li { background: #f8f9fa; margin-bottom: 10px; padding: 15px; border-radius: 5px; border-left: 5px solid #007bff; }
+        
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Gerenciador de Contatos</h1>
+</header>
+
+<nav>
+    <button onclick="mudarAba('cadastro')">Novo Cadastro</button>
+    <button onclick="mudarAba('lista')">Ver Lista</button>
+</nav>
+
+<div class="container">
+    <div id="cadastro" class="aba ativa">
+        <h2>Cadastrar Cliente</h2>
+        <form id="meuForm">
+            <label>Nome:</label>
+            <input type="text" id="nome" placeholder="Ex: João Silva" required>
+            <label>WhatsApp:</label>
+            <input type="text" id="whatsapp" placeholder="Ex: 11999999999" required>
+            <button type="submit" id="btnSalvar">Salvar na Planilha</button>
+        </form>
+        <p id="statusMsn" style="text-align: center; margin-top: 10px;"></p>
+    </div>
+
+    <div id="lista" class="aba">
+        <h2>Contatos Salvos</h2>
+        <div id="carregando">Carregando dados...</div>
+        <ul id="listaDados"></ul>
+    </div>
+</div>
+
+<script>
+    const API_URL = 'https://sheetdb.io/api/v1/l19i1lukrireu';
+
+    // FUNÇÃO PARA TROCAR ABAS
+    function mudarAba(id) {
+        document.querySelectorAll('.aba').forEach(a => a.classList.remove('ativa'));
+        document.getElementById(id).classList.add('ativa');
+        if(id === 'lista') carregarDados();
+    }
+
+    // ENVIAR DADOS PARA A PLANILHA
+    document.getElementById('meuForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const btn = document.getElementById('btnSalvar');
+        const msn = document.getElementById('statusMsn');
+        
+        btn.disabled = true;
+        btn.innerText = "Salvando...";
+
+        const dados = {
+            Nome: document.getElementById('nome').value,
+            WhatsApp: document.getElementById('whatsapp').value,
+            Data: new Date().toLocaleDateString('pt-BR')
+        };
+
+        fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ data: [dados] })
+        })
+        .then(res => {
+            msn.innerText = "✅ Salvo com sucesso!";
+            msn.style.color = "green";
+            document.getElementById('meuForm').reset();
+        })
+        .catch(err => {
+            msn.innerText = "❌ Erro ao salvar.";
+            msn.style.color = "red";
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerText = "Salvar na Planilha";
+        });
+    });
+
+    // PUXAR DADOS DA PLANILHA PARA O SITE
+    function carregarDados() {
+        const lista = document.getElementById('listaDados');
+        const carregando = document.getElementById('carregando');
+        lista.innerHTML = "";
+        carregando.style.display = "block";
+
+        fetch(API_URL)
+        .then(res => res.json())
+        .then(dados => {
+            carregando.style.display = "none";
+            dados.forEach(item => {
+                const li = document.createElement('li');
+                li.innerHTML = `<strong>${item.Nome}</strong><br>📱 ${item.WhatsApp}<br><small>📅 ${item.Data}</small>`;
+                lista.appendChild(li);
+            });
+        });
+    }
+</script>
+
+</body>
+</html>
